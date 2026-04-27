@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const fs = require('fs-extra');
+const https = require('https');
 const path = require('path');
 const crypto = require('crypto');
 const tls = require('tls');
@@ -199,6 +200,66 @@ function getMailConfigurationError() {
   return missingKeys.length > 0
     ? `Missing SMTP configuration: ${missingKeys.join(', ')}`
     : null;
+}
+
+function getRecaptchaConfigurationError() {
+  return process.env.RECAPTCHA_SECRET_KEY
+    ? null
+    : 'Missing RECAPTCHA_SECRET_KEY'
+}
+
+function verifyRecaptchaToken(token, remoteIp) {
+  return new Promise((resolve, reject) => {
+    const secret = process.env.RECAPTCHA_SECRET_KEY;
+    if (!secret) {
+      reject(new Error('reCAPTCHA is not configured'));
+      return;
+    }
+
+    const postData = new URLSearchParams({
+      secret,
+      response: token,
+      ...(remoteIp ? { remoteip: remoteIp } : {})
+    }).toString();
+
+    const request = https.request(
+      'https://www.google.com/recaptcha/api/siteverify',
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'Content-Length': Buffer.byteLength(postData)
+        }
+      },
+      (response) => {
+        let body = '';
+        response.on('data', (chunk) => {
+          body += chunk.toString();
+        });
+        response.on('end', () => {
+          try {
+            const parsed = JSON.parse(body);
+            if (parsed.success) {
+              resolve(parsed);
+              return;
+            }
+
+            reject(
+              new Error(
+                `reCAPTCHA verification failed${parsed['error-codes']?.length ? `: ${parsed['error-codes'].join(', ')}` : ''}`
+              )
+            );
+          } catch (error) {
+            reject(new Error('Invalid reCAPTCHA verification response'));
+          }
+        });
+      }
+    );
+
+    request.on('error', reject);
+    request.write(postData);
+    request.end();
+  });
 }
 
 function normalizeLineBreaks(value) {
@@ -420,11 +481,13 @@ app.use(bodyParser.json());
 // Routes
 app.post('/api/admin/login', async (req, res) => {
   try {
-    const { email, password } = req.body || {};
+    const { email, password, recaptchaToken } = req.body || {};
 
-    if (!email || !password) {
-      return res.status(400).json({ error: 'Email and password are required' });
+    if (!email || !password || !recaptchaToken) {
+      return res.status(400).json({ error: 'Email, password, and reCAPTCHA are required' });
     }
+
+    await verifyRecaptchaToken(recaptchaToken, req.ip);
 
     const admin = getConfiguredAdmin();
 
@@ -460,11 +523,19 @@ app.get('/api/leads', requireAdmin, async (req, res) => {
 
 app.post('/api/leads', async (req, res) => {
   try {
+    const { recaptchaToken, ...leadPayload } = req.body || {};
+
+    if (!recaptchaToken) {
+      return res.status(400).json({ error: 'reCAPTCHA is required' });
+    }
+
+    await verifyRecaptchaToken(recaptchaToken, req.ip);
+
     const leads = await fs.readJson(DATA_FILE);
     const newLead = {
       id: uuidv4(),
       date: new Date().toLocaleString(),
-      ...req.body
+      ...leadPayload
     };
     leads.unshift(newLead); // Add to beginning
     await fs.writeJson(DATA_FILE, leads, { spaces: 2 });
@@ -519,6 +590,11 @@ try {
 const mailConfigurationError = getMailConfigurationError();
 if (mailConfigurationError) {
   console.warn(`Email sending disabled. ${mailConfigurationError}`);
+}
+
+const recaptchaConfigurationError = getRecaptchaConfigurationError();
+if (recaptchaConfigurationError) {
+  console.warn(`reCAPTCHA disabled. ${recaptchaConfigurationError}`);
 }
 
 app.listen(PORT, () => {

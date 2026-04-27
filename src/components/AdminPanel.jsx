@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react'
+import { useRef, useState, useEffect } from 'react'
 import { Trash2, Download, Search, Calendar, User, Phone, Building2, Stethoscope, Users, HelpCircle, ArrowLeft, Globe2, Copy, Check, AlertTriangle, Inbox } from 'lucide-react'
 import { Link } from 'react-router-dom'
+import RecaptchaWidget from './RecaptchaWidget'
 
 const API_BASE_URL = 'http://localhost:5000'
 const ADMIN_TOKEN_KEY = 'medon_admin_token'
@@ -25,11 +26,13 @@ export default function AdminPanel() {
   const [adminEmail, setAdminEmail] = useState(() => localStorage.getItem(ADMIN_EMAIL_KEY) || '')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [recaptchaToken, setRecaptchaToken] = useState('')
   const [loginError, setLoginError] = useState('')
   const [loggingIn, setLoggingIn] = useState(false)
   const [copiedKey, setCopiedKey] = useState('')
   const [activeTab, setActiveTab] = useState('history')
   const [currentPage, setCurrentPage] = useState(1)
+  const recaptchaRef = useRef(null)
 
   const fetchLeads = async () => {
     try {
@@ -71,6 +74,10 @@ export default function AdminPanel() {
   const handleLogin = async (e) => {
     e.preventDefault()
     setLoginError('')
+    if (!recaptchaToken) {
+      setLoginError('Please complete reCAPTCHA')
+      return
+    }
     setLoggingIn(true)
 
     try {
@@ -79,13 +86,14 @@ export default function AdminPanel() {
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ email, password })
+        body: JSON.stringify({ email, password, recaptchaToken })
       })
 
       const data = await response.json()
 
       if (!response.ok) {
         setLoginError(data.error || 'Login failed')
+        recaptchaRef.current?.reset()
         return
       }
 
@@ -98,6 +106,7 @@ export default function AdminPanel() {
     } catch (err) {
       console.error(err)
       setLoginError('Login failed')
+      recaptchaRef.current?.reset()
     } finally {
       setLoggingIn(false)
     }
@@ -253,6 +262,11 @@ export default function AdminPanel() {
             {loginError ? (
               <p className="text-sm font-bold text-red-500">{loginError}</p>
             ) : null}
+
+            <RecaptchaWidget
+              ref={recaptchaRef}
+              onTokenChange={setRecaptchaToken}
+            />
 
             <button
               type="submit"

@@ -41,7 +41,7 @@ export default function Testimonials({ t }) {
                       "{review.text}"
                     </p>
                     <div className="flex items-start gap-4 border-t border-slate-100 pt-6">
-                      <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-bold">
+                      <div className="flex h-12 w-12 min-h-12 min-w-12 flex-shrink-0 items-center justify-center rounded-full bg-blue-100 text-blue-600 font-bold">
                         {review.name[0]}
                       </div>
                       <div>
@@ -97,7 +97,7 @@ export default function Testimonials({ t }) {
                 "{review.text}"
               </p>
               <div className="flex items-start gap-4 border-t border-slate-100 pt-6">
-                <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-bold">
+                <div className="flex h-12 w-12 min-h-12 min-w-12 flex-shrink-0 items-center justify-center rounded-full bg-blue-100 text-blue-600 font-bold">
                   {review.name[0]}
                 </div>
                 <div>

@@ -1,14 +1,21 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { detectTrafficSource } from '../utils/trafficSource'
+import RecaptchaWidget from './RecaptchaWidget'
 
 export default function Contact({ t }) {
   const [formData, setFormData] = useState({ name: '', email: '', phone: '' })
   const [isSubmitted, setIsSubmitted] = useState(false)
-
+  const [recaptchaToken, setRecaptchaToken] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const recaptchaRef = useRef(null)
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+    if (!recaptchaToken) {
+      alert('Please complete reCAPTCHA.')
+      return
+    }
+
     try {
       setSubmitting(true)
       const response = await fetch('http://localhost:5000/api/leads', {
@@ -20,7 +27,8 @@ export default function Contact({ t }) {
           ...formData,
           lang: t.lang,
           source: 'Footer Form',
-          trafficSource: detectTrafficSource()
+          trafficSource: detectTrafficSource(),
+          recaptchaToken
         })
       })
       const responseData = await response.json()
@@ -31,11 +39,12 @@ export default function Contact({ t }) {
         }
         setIsSubmitted(true)
       } else {
-        throw new Error('Failed to submit')
+        throw new Error(responseData.error || 'Failed to submit')
       }
     } catch (err) {
       console.error('Submission error:', err)
-      alert('Failed to send request. Please try again.')
+      alert(err.message || 'Failed to send request. Please try again.')
+      recaptchaRef.current?.reset()
     } finally {
       setSubmitting(false)
     }
@@ -111,6 +120,11 @@ export default function Contact({ t }) {
                 <button type="submit" disabled={submitting} className="w-full bg-white text-blue-700 font-bold py-4 rounded-xl hover:bg-blue-50 transition-colors shadow-lg disabled:opacity-50">
                   {submitting ? t.contact.form.submitting : t.contact.form.submit}
                 </button>
+                <RecaptchaWidget
+                  ref={recaptchaRef}
+                  onTokenChange={setRecaptchaToken}
+                  className="pt-2"
+                />
               </form>
             )}
           </div>

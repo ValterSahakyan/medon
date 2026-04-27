@@ -1,12 +1,15 @@
-import { useState, useEffect } from 'react'
+import { useRef, useState, useEffect } from 'react'
 import { X, ChevronRight, ChevronLeft, CheckCircle2 } from 'lucide-react'
 import { detectTrafficSource } from '../utils/trafficSource'
+import RecaptchaWidget from './RecaptchaWidget'
 
 export default function ContactModal({ isOpen, onClose, t }) {
   const [step, setStep] = useState(0)
   const [formData, setFormData] = useState({})
   const [isSubmitted, setIsSubmitted] = useState(false)
   const [submitting, setSubmitting] = useState(false)
+  const [recaptchaToken, setRecaptchaToken] = useState('')
+  const recaptchaRef = useRef(null)
 
   if (!isOpen) return null
 
@@ -16,6 +19,11 @@ export default function ContactModal({ isOpen, onClose, t }) {
   const handleNext = async (e) => {
     e.preventDefault()
     if (isLastStep) {
+      if (!recaptchaToken) {
+        alert('Please complete reCAPTCHA.')
+        return
+      }
+
       try {
         setSubmitting(true)
         const response = await fetch('http://localhost:5000/api/leads', {
@@ -27,7 +35,8 @@ export default function ContactModal({ isOpen, onClose, t }) {
           ...formData,
           lang: t.lang,
           source: 'Modal',
-          trafficSource: detectTrafficSource()
+          trafficSource: detectTrafficSource(),
+          recaptchaToken
         })
         })
         const responseData = await response.json()
@@ -38,11 +47,12 @@ export default function ContactModal({ isOpen, onClose, t }) {
           }
           setIsSubmitted(true)
         } else {
-          throw new Error('Failed to submit')
+          throw new Error(responseData.error || 'Failed to submit')
         }
       } catch (err) {
         console.error('Submission error:', err)
-        alert('Failed to send request. Please try again.')
+        alert(err.message || 'Failed to send request. Please try again.')
+        recaptchaRef.current?.reset()
       } finally {
         setSubmitting(false)
       }
@@ -56,6 +66,17 @@ export default function ContactModal({ isOpen, onClose, t }) {
   const handleChange = (id, value) => {
     setFormData({ ...formData, [id]: value })
   }
+
+  useEffect(() => {
+    if (!isOpen) {
+      setStep(0)
+      setFormData({})
+      setIsSubmitted(false)
+      setSubmitting(false)
+      setRecaptchaToken('')
+      return
+    }
+  }, [isOpen])
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-6">
@@ -144,6 +165,13 @@ export default function ContactModal({ isOpen, onClose, t }) {
                       )}
                     </div>
                   ))}
+                  {isLastStep ? (
+                    <RecaptchaWidget
+                      ref={recaptchaRef}
+                      onTokenChange={setRecaptchaToken}
+                      className="pt-2"
+                    />
+                  ) : null}
                 </div>
               </div>
 
