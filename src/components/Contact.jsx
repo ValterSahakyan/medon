@@ -23,8 +23,12 @@ export default function Contact({ t }) {
           trafficSource: detectTrafficSource()
         })
       })
+      const responseData = await response.json()
 
       if (response.ok) {
+        if (responseData.mailStatus === 'disabled' || responseData.mailStatus === 'failed') {
+          alert(`Lead saved, but email was not sent. ${responseData.mailError || ''}`.trim())
+        }
         setIsSubmitted(true)
       } else {
         throw new Error('Failed to submit')

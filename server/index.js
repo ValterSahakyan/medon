@@ -10,7 +10,7 @@ const { v4: uuidv4 } = require('uuid');
 const app = express();
 const PORT = process.env.PORT || 5000;
 const DATA_FILE = path.join(__dirname, 'data', 'leads.json');
-const adminSessions = new Map();
+const ADMIN_TOKEN_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 
 // Ensure data directory and file exist
 fs.ensureFileSync(DATA_FILE);
@@ -85,17 +85,89 @@ function getConfiguredAdmin() {
   };
 }
 
+function getAdminTokenSecret(admin) {
+  return process.env.ADMIN_TOKEN_SECRET || admin.passwordHash;
+}
+
+function signTokenPayload(payload, secret) {
+  return crypto
+    .createHmac('sha256', secret)
+    .update(payload)
+    .digest('base64url');
+}
+
+function createAdminToken(admin) {
+  const payload = Buffer.from(
+    JSON.stringify({
+      id: admin.id,
+      email: admin.email,
+      role: admin.role,
+      exp: Date.now() + ADMIN_TOKEN_TTL_MS
+    }),
+    'utf8'
+  ).toString('base64url');
+
+  const signature = signTokenPayload(payload, getAdminTokenSecret(admin));
+  return `${payload}.${signature}`;
+}
+
+function verifyAdminToken(token) {
+  const [payloadBase64, signature] = String(token || '').split('.');
+  if (!payloadBase64 || !signature) {
+    return null;
+  }
+
+  const admin = getConfiguredAdmin();
+  const expectedSignature = signTokenPayload(payloadBase64, getAdminTokenSecret(admin));
+
+  const actualSignatureBuffer = Buffer.from(signature);
+  const expectedSignatureBuffer = Buffer.from(expectedSignature);
+  if (
+    actualSignatureBuffer.length !== expectedSignatureBuffer.length ||
+    !crypto.timingSafeEqual(actualSignatureBuffer, expectedSignatureBuffer)
+  ) {
+    return null;
+  }
+
+  let payload;
+  try {
+    payload = JSON.parse(Buffer.from(payloadBase64, 'base64url').toString('utf8'));
+  } catch {
+    return null;
+  }
+
+  if (!payload?.exp || payload.exp < Date.now()) {
+    return null;
+  }
+
+  if (
+    payload.id !== admin.id ||
+    String(payload.email).toLowerCase() !== admin.email.toLowerCase() ||
+    payload.role !== admin.role
+  ) {
+    return null;
+  }
+
+  return {
+    id: admin.id,
+    email: admin.email,
+    role: admin.role
+  };
+}
+
 function requireAdmin(req, res, next) {
   const authHeader = req.headers.authorization || '';
   const token = authHeader.startsWith('Bearer ')
     ? authHeader.slice('Bearer '.length)
     : null;
 
-  if (!token || !adminSessions.has(token)) {
+  const adminSession = verifyAdminToken(token);
+
+  if (!adminSession) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
 
-  req.admin = adminSessions.get(token);
+  req.admin = adminSession;
   next();
 }
 
@@ -119,6 +191,14 @@ function getMailConfig() {
     from,
     notificationTo
   };
+}
+
+function getMailConfigurationError() {
+  const requiredKeys = ['SMTP_HOST', 'SMTP_PORT', 'SMTP_USER', 'SMTP_PASS'];
+  const missingKeys = requiredKeys.filter((key) => !process.env[key]);
+  return missingKeys.length > 0
+    ? `Missing SMTP configuration: ${missingKeys.join(', ')}`
+    : null;
 }
 
 function normalizeLineBreaks(value) {
@@ -253,14 +333,14 @@ function buildLeadReplyEmail(lead) {
 
   if (isRussian) {
     return {
-      subject: 'Мы получили вашу заявку в Medon',
+      subject: 'Мы получили вашу заявку',
       text: [
         `Здравствуйте, ${leadName}!`,
         '',
-        'Спасибо за обращение в Medon.',
-        'Мы получили вашу заявку и свяжемся с вами в течение 24 часов.',
+        'Спасибо за вашу заявку.',
+        'Мы получили ваш запрос и свяжемся с вами в ближайшее время.',
         '',
-        'Если хотите ускорить коммуникацию, просто ответьте на это письмо или позвоните нам.',
+        'Если у вас есть дополнительные вопросы, вы можете ответить на это письмо.',
         '',
         'С уважением,',
         'Команда Medon',
@@ -271,14 +351,14 @@ function buildLeadReplyEmail(lead) {
   }
 
   return {
-    subject: 'Medon-ը ստացել է ձեր հայտը',
+    subject: 'Մենք ստացել ենք ձեր հայտը',
     text: [
       `Բարև, ${leadName}!`,
       '',
-      'Շնորհակալություն Medon-ին դիմելու համար։',
-      'Մենք ստացել ենք ձեր հայտը և կկապվենք ձեզ հետ 24 ժամվա ընթացքում։',
+      'Շնորհակալություն ձեր հայտի համար։',
+      'Մենք ստացել ենք ձեր հարցումը և շուտով կկապվենք ձեզ հետ։',
       '',
-      'Եթե ցանկանում եք արագացնել կապը, պարզապես պատասխանեք այս նամակին կամ զանգահարեք մեզ։',
+      'Եթե ունեք հավելյալ հարցեր, կարող եք պատասխանել այս նամակին։',
       '',
       'Հարգանքով,',
       'Medon թիմ',
@@ -320,31 +400,18 @@ async function sendLeadEmails(lead) {
     return;
   }
 
-  const tasks = [];
-  const notificationEmail = buildLeadNotificationEmail(lead);
-
-  tasks.push(
-    sendEmail({
-      to: mailConfig.notificationTo,
-      subject: notificationEmail.subject,
-      text: notificationEmail.text,
-      replyTo: lead.email || undefined
-    })
-  );
-
   if (lead.email) {
     const replyEmail = buildLeadReplyEmail(lead);
-    tasks.push(
-      sendEmail({
-        to: lead.email,
-        subject: replyEmail.subject,
-        text: replyEmail.text,
-        replyTo: mailConfig.from
-      })
-    );
+    await sendEmail({
+      to: lead.email,
+      subject: replyEmail.subject,
+      text: replyEmail.text,
+      replyTo: mailConfig.from
+    });
+    return;
   }
 
-  await Promise.all(tasks);
+  throw new Error('Lead email is missing');
 }
 
 app.use(cors());
@@ -368,12 +435,7 @@ app.post('/api/admin/login', async (req, res) => {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
-    const token = crypto.randomBytes(32).toString('hex');
-    adminSessions.set(token, {
-      id: admin.id,
-      email: admin.email,
-      role: admin.role
-    });
+    const token = createAdminToken(admin);
 
     res.json({
       token,
@@ -406,12 +468,30 @@ app.post('/api/leads', async (req, res) => {
     };
     leads.unshift(newLead); // Add to beginning
     await fs.writeJson(DATA_FILE, leads, { spaces: 2 });
+    const mailConfigurationError = getMailConfigurationError();
+
     try {
+      if (mailConfigurationError) {
+        return res.status(201).json({
+          ...newLead,
+          mailStatus: 'disabled',
+          mailError: mailConfigurationError
+        });
+      }
+
       await sendLeadEmails(newLead);
+      return res.status(201).json({
+        ...newLead,
+        mailStatus: 'sent'
+      });
     } catch (mailError) {
       console.error('Failed to send lead email:', mailError.message);
+      return res.status(201).json({
+        ...newLead,
+        mailStatus: 'failed',
+        mailError: mailError.message
+      });
     }
-    res.status(201).json(newLead);
   } catch (error) {
     res.status(500).json({ error: 'Failed to save lead' });
   }
@@ -434,6 +514,11 @@ try {
 } catch (error) {
   console.error(error.message);
   process.exit(1);
+}
+
+const mailConfigurationError = getMailConfigurationError();
+if (mailConfigurationError) {
+  console.warn(`Email sending disabled. ${mailConfigurationError}`);
 }
 
 app.listen(PORT, () => {
