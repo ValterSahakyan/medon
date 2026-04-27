@@ -188,7 +188,9 @@ export const translations = {
       subtitle: 'Թողեք ձեր տվյալները և մենք կկապվենք ձեզ հետ 24 ժամվա ընթացքում: Առաջին խորհրդատվությունն անվճար է:',
       form: {
         name: 'Ձեր անունը',
-        namePlaceholder: 'Անուն Ազգանուն',
+        namePlaceholder: 'Full name',
+        email: 'Email',
+        emailPlaceholder: 'info@clinic.am',
         phone: 'Հեռախոսահամար',
         phonePlaceholder: '+374 XX XXX XXX',
         clinic: 'Կլինիկայի անվանումը',
@@ -263,7 +265,8 @@ export const translations = {
         {
           title: 'Կոնտակտային Տվյալներ',
           questions: [
-            { id: 'name', label: 'Ձեր անունը', placeholder: 'Անուն Ազգանուն', type: 'text' },
+            { id: 'name', label: 'Name', placeholder: 'Full name', type: 'text' },
+            { id: 'email', label: 'Email', placeholder: 'info@clinic.am', type: 'email' },
             { id: 'phone', label: 'Հեռախոսահամար', placeholder: '+374 XX XXX XXX', type: 'tel' },
           ]
         }
@@ -481,7 +484,9 @@ export const translations = {
       subtitle: 'Оставьте контакты и мы свяжемся с вами в течение 24 часов. Первая консультация — бесплатно.',
       form: {
         name: 'Ваше имя',
-        namePlaceholder: 'Имя Фамилия',
+        namePlaceholder: 'Full name',
+        email: 'Email',
+        emailPlaceholder: 'info@clinic.am',
         phone: 'Номер телефона',
         phonePlaceholder: '+374 XX XXX XXX',
         clinic: 'Название клиники',
@@ -556,7 +561,8 @@ export const translations = {
         {
           title: 'Контактные Данные',
           questions: [
-            { id: 'name', label: 'Ваше имя', placeholder: 'Имя Фамилия', type: 'text' },
+            { id: 'name', label: 'Name', placeholder: 'Full name', type: 'text' },
+            { id: 'email', label: 'Email', placeholder: 'info@clinic.am', type: 'email' },
             { id: 'phone', label: 'Номер телефона', placeholder: '+374 XX XXX XXX', type: 'tel' },
           ]
         }
@@ -585,3 +591,4 @@ export const translations = {
     },
   },
 }
+

@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { detectTrafficSource } from '../utils/trafficSource'
 
 export default function Contact({ t }) {
-  const [formData, setFormData] = useState({ name: '', phone: '' })
+  const [formData, setFormData] = useState({ name: '', email: '', phone: '' })
   const [isSubmitted, setIsSubmitted] = useState(false)
 
   const [submitting, setSubmitting] = useState(false)
@@ -18,6 +18,7 @@ export default function Contact({ t }) {
         },
         body: JSON.stringify({
           ...formData,
+          lang: t.lang,
           source: 'Footer Form',
           trafficSource: detectTrafficSource()
         })
@@ -80,6 +81,17 @@ export default function Contact({ t }) {
                   />
                 </div>
                 <div>
+                  <label className="text-xs font-bold uppercase tracking-widest opacity-70 mb-2 block">
+                    {t.contact.form.email}
+                  </label>
+                  <input 
+                    required
+                    type="email"
+                    value={formData.email}
+                    onChange={(e) => setFormData({...formData, email: e.target.value})}
+                    placeholder={t.contact.form.emailPlaceholder}
+                    className="w-full bg-white/10 border-white/20 rounded-xl px-4 py-3 placeholder:text-white/40 text-white focus:bg-white/20 focus:border-white/40 transition-all outline-none mb-4"
+                  />
                   <label className="text-xs font-bold uppercase tracking-widest opacity-70 mb-2 block">
                     {t.contact.form.phone}
                   </label>

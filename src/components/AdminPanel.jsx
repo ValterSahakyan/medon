@@ -140,6 +140,7 @@ export default function AdminPanel() {
       ['date', 'Date'],
       ['source', 'Source'],
       ['name', 'Name'],
+      ['email', 'Email'],
       ['phone', 'Phone'],
       ['clinicName', 'Clinic Name'],
       ['specialization', 'Specialization'],
@@ -162,6 +163,7 @@ export default function AdminPanel() {
       date: lead.date,
       source: lead.source,
       name: lead.name,
+      email: lead.email,
       phone: lead.phone,
       clinicName: lead.clinicName,
       specialization: lead.specialization,
@@ -454,6 +456,11 @@ export default function AdminPanel() {
                               <User size={14} className="text-slate-400" />
                               {lead.name}
                             </div>
+                            {lead.email ? (
+                              <div className="text-slate-500 text-sm break-all">
+                                {lead.email}
+                              </div>
+                            ) : null}
                             <div className="flex items-center gap-2 text-slate-500 text-sm">
                               <Phone size={14} className="text-slate-400" />
                               {lead.phone}

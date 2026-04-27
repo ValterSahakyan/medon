@@ -23,11 +23,12 @@ export default function ContactModal({ isOpen, onClose, t }) {
           headers: {
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify({
-            ...formData,
-            source: 'Modal',
-            trafficSource: detectTrafficSource()
-          })
+        body: JSON.stringify({
+          ...formData,
+          lang: t.lang,
+          source: 'Modal',
+          trafficSource: detectTrafficSource()
+        })
         })
 
         if (response.ok) {
