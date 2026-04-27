@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//c/Users/User/.claude/skills/ui-ux-pro-max/**)",
+      "Bash(python skills/ui-ux-pro-max/scripts/search.py \"healthcare medical CRM SaaS landing page professional dark glassmorphism\" --design-system -p \"Medon\" -f markdown)",
+      "Bash(python scripts/search.py \"healthcare medical CRM SaaS landing page professional dark glassmorphism\" --design-system -p \"Medon\" -f markdown)",
+      "Bash(python scripts/search.py \"landing hero CTA testimonial social-proof conversion B2B\" --domain landing -n 3)",
+      "Bash(python scripts/search.py \"glassmorphism dark navy blue medical\" --domain style -n 2)",
+      "Bash(cat)",
+      "Bash(mkdir -p src/components src/data)",
+      "Bash(npm install *)",
+      "Bash(npx vite *)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:5173)"
+    ]
+  }
+}

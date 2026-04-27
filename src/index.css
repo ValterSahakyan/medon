@@ -1,0 +1,101 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --primary: #0047FF;
+    --primary-light: #00D4FF;
+    --accent: #6366f1;
+    --bg-main: #f8fafc;
+    --text-main: #0f172a;
+    --text-muted: #64748b;
+  }
+
+  * {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background-color: var(--bg-main);
+    color: var(--text-main);
+    overflow-x: hidden;
+  }
+
+  html {
+    scroll-padding-top: 96px;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Inter', sans-serif;
+    letter-spacing: -0.025em;
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+}
+
+@layer utilities {
+  .gradient-text {
+    background: linear-gradient(135deg, var(--primary-light) 0%, var(--primary) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .gradient-brand {
+    background: linear-gradient(135deg, var(--primary-light) 0%, var(--primary) 100%);
+  }
+
+  .glass {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+  }
+
+  .glass-card {
+    background: white;
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .glass-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+    border-color: rgba(0, 71, 255, 0.1);
+  }
+
+  .hero-blob {
+    position: absolute;
+    filter: blur(80px);
+    z-index: -1;
+    opacity: 0.15;
+    border-radius: 100%;
+  }
+
+  .float-anim {
+    animation: float 6s ease-in-out infinite;
+  }
+
+  @keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-15px); }
+  }
+
+  .btn-premium {
+    @apply px-6 py-3 rounded-xl font-semibold transition-all duration-300 active:scale-95;
+  }
+
+  .btn-primary {
+    @apply btn-premium bg-[#0047FF] text-white shadow-lg shadow-blue-500/20 hover:bg-[#0036CC] hover:shadow-blue-500/40;
+  }
+
+  .btn-secondary {
+    @apply btn-premium bg-white text-slate-900 border border-slate-200 hover:bg-slate-50 hover:border-slate-300;
+  }
+}

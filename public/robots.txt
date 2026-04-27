@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /3zdadmin
+Disallow: /3dzadmin
+
+Sitemap: https://medon.am/sitemap.xml
