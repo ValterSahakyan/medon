@@ -11,12 +11,19 @@ const { v4: uuidv4 } = require('uuid');
 const app = express();
 const PORT = process.env.PORT || 5000;
 const DATA_FILE = path.join(__dirname, 'data', 'leads.json');
+const PROMO_CODES_FILE = path.join(__dirname, 'data', 'promoCodes.json');
 const ADMIN_TOKEN_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 
-// Ensure data directory and file exist
+// Ensure data directory and files exist
 fs.ensureFileSync(DATA_FILE);
 if (fs.readFileSync(DATA_FILE, 'utf8').trim() === '') {
   fs.writeJsonSync(DATA_FILE, []);
+}
+fs.ensureFileSync(PROMO_CODES_FILE);
+if (fs.readFileSync(PROMO_CODES_FILE, 'utf8').trim() === '') {
+  fs.writeJsonSync(PROMO_CODES_FILE, [
+    { code: 'BSCOSMO', description: 'BS Cosmo network', discount: '', createdAt: new Date().toISOString() }
+  ], { spaces: 2 });
 }
 
 function hashPassword(password, salt = crypto.randomBytes(16).toString('hex')) {
@@ -577,6 +584,68 @@ app.delete('/api/leads/:id', requireAdmin, async (req, res) => {
     res.json({ message: 'Lead deleted successfully' });
   } catch (error) {
     res.status(500).json({ error: 'Failed to delete lead' });
+  }
+});
+
+// Public: returns code strings with discount for client-side validation
+app.get('/api/promo-codes', async (req, res) => {
+  try {
+    const codes = await fs.readJson(PROMO_CODES_FILE);
+    res.json(codes.map(c => ({ code: c.code, discount: c.discount || '' })));
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to read promo codes' });
+  }
+});
+
+// Admin: returns full promo code objects
+app.get('/api/promo-codes/all', requireAdmin, async (req, res) => {
+  try {
+    const codes = await fs.readJson(PROMO_CODES_FILE);
+    res.json(codes);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to read promo codes' });
+  }
+});
+
+app.post('/api/promo-codes', requireAdmin, async (req, res) => {
+  try {
+    const { code, description, discount } = req.body || {};
+    if (!code || typeof code !== 'string' || !code.trim()) {
+      return res.status(400).json({ error: 'Code is required' });
+    }
+    const normalized = code.trim().toUpperCase();
+    const codes = await fs.readJson(PROMO_CODES_FILE);
+    if (codes.some(c => c.code === normalized)) {
+      return res.status(409).json({ error: 'Code already exists' });
+    }
+    const discountNum = discount ? Number(String(discount).replace('%', '').trim()) : null;
+    const newCode = {
+      code: normalized,
+      description: description ? String(description).trim() : '',
+      discount: discountNum && !isNaN(discountNum) ? discountNum : '',
+      createdAt: new Date().toISOString()
+    };
+    codes.push(newCode);
+    await fs.writeJson(PROMO_CODES_FILE, codes, { spaces: 2 });
+    res.status(201).json(newCode);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to save promo code' });
+  }
+});
+
+app.delete('/api/promo-codes/:code', requireAdmin, async (req, res) => {
+  try {
+    const code = req.params.code.toUpperCase();
+    let codes = await fs.readJson(PROMO_CODES_FILE);
+    const before = codes.length;
+    codes = codes.filter(c => c.code !== code);
+    if (codes.length === before) {
+      return res.status(404).json({ error: 'Code not found' });
+    }
+    await fs.writeJson(PROMO_CODES_FILE, codes, { spaces: 2 });
+    res.json({ message: 'Promo code deleted' });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to delete promo code' });
   }
 });
 

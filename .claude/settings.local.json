@@ -10,7 +10,9 @@
       "Bash(mkdir -p src/components src/data)",
       "Bash(npm install *)",
       "Bash(npx vite *)",
-      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:5173)"
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:5173)",
+      "Bash(del \"c:\\\\work\\\\medon\\\\src\\\\data\\\\promoCodes.js\")",
+      "Bash(npm run *)"
     ]
   }
 }

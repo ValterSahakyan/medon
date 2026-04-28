@@ -1,9 +1,9 @@
 import { useRef, useState, useEffect } from 'react'
-import { Trash2, Download, Search, Calendar, User, Phone, Building2, Stethoscope, Users, HelpCircle, ArrowLeft, Globe2, Copy, Check, AlertTriangle, Inbox } from 'lucide-react'
+import { Trash2, Download, Search, Calendar, User, Phone, Building2, Stethoscope, Users, HelpCircle, ArrowLeft, Globe2, Copy, Check, AlertTriangle, Inbox, Tag, Plus, X } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import RecaptchaWidget from './RecaptchaWidget'
 
-const API_BASE_URL = 'http://localhost:5000'
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000'
 const ADMIN_TOKEN_KEY = 'medon_admin_token'
 const ADMIN_EMAIL_KEY = 'medon_admin_email'
 const LANDING_URL = 'https://medon.am'
@@ -31,6 +31,13 @@ export default function AdminPanel() {
   const [loggingIn, setLoggingIn] = useState(false)
   const [copiedKey, setCopiedKey] = useState('')
   const [activeTab, setActiveTab] = useState('history')
+  const [promoCodes, setPromoCodes] = useState([])
+  const [promoLoading, setPromoLoading] = useState(false)
+  const [newCode, setNewCode] = useState('')
+  const [newCodeDesc, setNewCodeDesc] = useState('')
+  const [newCodeDiscount, setNewCodeDiscount] = useState('')
+  const [promoSaving, setPromoSaving] = useState(false)
+  const [promoError, setPromoError] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
   const recaptchaRef = useRef(null)
 
@@ -59,9 +66,63 @@ export default function AdminPanel() {
     }
   }
 
+  const fetchPromoCodes = async () => {
+    try {
+      setPromoLoading(true)
+      const response = await fetch(`${API_BASE_URL}/api/promo-codes/all`, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      if (response.status === 401) { handleLogout(); return }
+      const data = await response.json()
+      setPromoCodes(data)
+    } catch (err) {
+      console.error('Failed to load promo codes', err)
+    } finally {
+      setPromoLoading(false)
+    }
+  }
+
+  const addPromoCode = async (e) => {
+    e.preventDefault()
+    setPromoError('')
+    if (!newCode.trim()) return
+    try {
+      setPromoSaving(true)
+      const response = await fetch(`${API_BASE_URL}/api/promo-codes`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ code: newCode.trim(), description: newCodeDesc.trim(), discount: newCodeDiscount.trim() })
+      })
+      const data = await response.json()
+      if (!response.ok) { setPromoError(data.error || 'Failed to add code'); return }
+      setPromoCodes([...promoCodes, data])
+      setNewCode('')
+      setNewCodeDesc('')
+      setNewCodeDiscount('')
+    } catch (err) {
+      setPromoError('Failed to add promo code')
+    } finally {
+      setPromoSaving(false)
+    }
+  }
+
+  const deletePromoCode = async (code) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/promo-codes/${code}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      if (response.status === 401) { handleLogout(); return }
+      if (response.ok) setPromoCodes(promoCodes.filter(c => c.code !== code))
+    } catch (err) {
+      alert('Failed to delete promo code')
+    }
+  }
+
   useEffect(() => {
     if (token) {
       fetchLeads()
+      fetchPromoCodes()
     } else {
       setLoading(false)
     }
@@ -156,6 +217,7 @@ export default function AdminPanel() {
       ['teamSize', 'Team Size'],
       ['mainProblem', 'Main Problem'],
       ['currentTools', 'Current Tools'],
+      ['promoCode', 'Promo Code'],
       ['trafficChannel', 'Traffic Channel'],
       ['trafficMedium', 'Traffic Medium'],
       ['trafficCampaign', 'Traffic Campaign'],
@@ -179,6 +241,7 @@ export default function AdminPanel() {
       teamSize: lead.teamSize,
       mainProblem: lead.mainProblem,
       currentTools: lead.currentTools,
+      promoCode: lead.promoCode,
       trafficChannel: lead.trafficSource?.channel,
       trafficMedium: lead.trafficSource?.medium,
       trafficCampaign: lead.trafficSource?.campaign,
@@ -354,9 +417,116 @@ export default function AdminPanel() {
           >
             UTM Links
           </button>
+          <button
+            onClick={() => setActiveTab('promo')}
+            className={`px-5 py-3 rounded-2xl text-sm font-bold transition-all ${
+              activeTab === 'promo'
+                ? 'bg-blue-600 text-white shadow-lg shadow-blue-200'
+                : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
+            }`}
+          >
+            Promo Codes
+          </button>
         </div>
 
-        {activeTab === 'utm' ? (
+        {activeTab === 'promo' ? (
+          <div className="bg-white rounded-[2.5rem] border border-slate-200 shadow-sm p-8 mb-8">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-8">
+              <div>
+                <h2 className="text-2xl font-black text-slate-900">Promo Codes</h2>
+                <p className="text-slate-500 text-sm mt-1">
+                  Manage discount codes shared with your network.
+                </p>
+              </div>
+            </div>
+
+            {/* Add new code form */}
+            <form onSubmit={addPromoCode} className="flex flex-col sm:flex-row gap-3 mb-8">
+              <input
+                type="text"
+                placeholder="PROMOCODE"
+                value={newCode}
+                onChange={(e) => setNewCode(e.target.value.toUpperCase())}
+                className="flex-1 px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:bg-white focus:ring-2 focus:ring-blue-600/10 focus:border-blue-600 transition-all font-mono uppercase tracking-widest text-slate-900 placeholder:normal-case placeholder:tracking-normal"
+              />
+              <input
+                type="text"
+                placeholder="Description (optional)"
+                value={newCodeDesc}
+                onChange={(e) => setNewCodeDesc(e.target.value)}
+                className="flex-[2] px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:bg-white focus:ring-2 focus:ring-blue-600/10 focus:border-blue-600 transition-all text-slate-900"
+              />
+              <div className="relative sm:w-32 shrink-0">
+                <input
+                  type="number"
+                  min="1"
+                  max="100"
+                  placeholder="% off"
+                  value={newCodeDiscount}
+                  onChange={(e) => setNewCodeDiscount(e.target.value)}
+                  className="w-full px-4 py-3 pr-8 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:bg-white focus:ring-2 focus:ring-blue-600/10 focus:border-blue-600 transition-all text-slate-900"
+                />
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm pointer-events-none">%</span>
+              </div>
+              <button
+                type="submit"
+                disabled={promoSaving || !newCode.trim()}
+                className="flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-2xl font-bold text-sm hover:bg-blue-700 transition-all shadow-lg shadow-blue-200 disabled:opacity-50 whitespace-nowrap"
+              >
+                <Plus size={16} />
+                Add Code
+              </button>
+            </form>
+            {promoError && (
+              <p className="text-red-500 text-sm font-bold mb-6 -mt-4 ml-1">{promoError}</p>
+            )}
+
+            {/* Codes list */}
+            {promoLoading ? (
+              <div className="py-12 text-center">
+                <div className="inline-block w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mb-3"></div>
+                <p className="text-slate-400 font-bold text-sm">Loading...</p>
+              </div>
+            ) : promoCodes.length === 0 ? (
+              <div className="py-12 text-center">
+                <Tag size={24} className="mx-auto text-slate-300 mb-3" />
+                <p className="text-slate-400 font-bold">No promo codes yet</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {promoCodes.map((item) => (
+                  <div
+                    key={item.code}
+                    className="flex items-center gap-4 rounded-2xl border border-slate-200 bg-slate-50/70 px-5 py-4"
+                  >
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                      <span className="font-mono text-sm font-black tracking-widest text-blue-600 bg-blue-50 px-3 py-1.5 rounded-xl uppercase shrink-0">
+                        {item.code}
+                      </span>
+                      {item.discount ? (
+                        <span className="text-xs font-black text-green-600 bg-green-50 px-2.5 py-1 rounded-lg shrink-0">
+                          {item.discount}% off
+                        </span>
+                      ) : null}
+                      {item.description && (
+                        <span className="text-slate-500 text-sm truncate">{item.description}</span>
+                      )}
+                    </div>
+                    <div className="text-xs text-slate-400 shrink-0 hidden md:block">
+                      {new Date(item.createdAt).toLocaleDateString()}
+                    </div>
+                    <button
+                      onClick={() => deletePromoCode(item.code)}
+                      className="p-2 text-slate-300 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all shrink-0"
+                    >
+                      <X size={16} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        ) : activeTab === 'utm' ? (
           <div className="bg-white rounded-[2.5rem] border border-slate-200 shadow-sm p-8 mb-8">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-6">
               <div>
@@ -417,6 +587,7 @@ export default function AdminPanel() {
                     <th className="px-8 py-4">Contact</th>
                     <th className="px-8 py-4">Clinic Info</th>
                     <th className="px-8 py-4">Needs / Problems</th>
+                    <th className="px-8 py-4">Promo</th>
                     <th className="px-8 py-4">Traffic</th>
                     <th className="px-8 py-4 text-right">Actions</th>
                   </tr>
@@ -424,14 +595,14 @@ export default function AdminPanel() {
                 <tbody className="divide-y divide-slate-100">
                   {loading ? (
                     <tr>
-                      <td colSpan="6" className="px-8 py-20 text-center">
+                      <td colSpan="7" className="px-8 py-20 text-center">
                         <div className="inline-block w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mb-4"></div>
                         <p className="text-slate-400 font-bold">Loading leads...</p>
                       </td>
                     </tr>
                   ) : error ? (
                     <tr>
-                      <td colSpan="6" className="px-8 py-20 text-center">
+                      <td colSpan="7" className="px-8 py-20 text-center">
                         <div className="mb-2 flex justify-center text-red-500">
                           <AlertTriangle size={24} />
                         </div>
@@ -441,7 +612,7 @@ export default function AdminPanel() {
                     </tr>
                   ) : filteredLeads.length === 0 ? (
                     <tr>
-                      <td colSpan="6" className="px-8 py-20 text-center">
+                      <td colSpan="7" className="px-8 py-20 text-center">
                         <div className="mb-2 flex justify-center text-slate-300">
                           <Inbox size={24} />
                         </div>
@@ -517,6 +688,18 @@ export default function AdminPanel() {
                               </div>
                             )}
                           </div>
+                        </td>
+                        <td className="px-8 py-6">
+                          {lead.promoCode ? (
+                            <div className="flex items-center gap-2">
+                              <Tag size={13} className="text-blue-400 shrink-0" />
+                              <span className="text-xs font-black tracking-widest text-blue-600 bg-blue-50 px-2.5 py-1 rounded-lg uppercase">
+                                {lead.promoCode}
+                              </span>
+                            </div>
+                          ) : (
+                            <span className="text-slate-300 text-xs">—</span>
+                          )}
                         </td>
                         <td className="px-8 py-6 max-w-xs">
                           <div className="space-y-1 text-sm">

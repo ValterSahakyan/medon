@@ -4,6 +4,13 @@ export const translations = {
     langLabel: 'ՀՅ',
     langFull: 'Հայերեն',
 
+    validation: {
+      required: 'Պարտադիր դաշտ',
+      invalidEmail: 'Անվավեր email հասցե',
+      recaptcha: 'Խնդրում ենք ավարտել reCAPTCHA-ն',
+      submitError: 'Ուղարկումը ձախողվեց: Փորձեք կրկին',
+    },
+
     nav: {
       services: 'Ծառայություններ',
       howItWorks: 'Ինչպես է Աշխատում',
@@ -197,6 +204,10 @@ export const translations = {
         clinicPlaceholder: 'Ձեր կլինիկայի անունը',
         message: 'Հաղորդագրություն (կամընտիր)',
         messagePlaceholder: 'Նկարագրեք ձեր հիմնական խնդիրը կամ հարցը...',
+        promoCode: 'Պրոմո Կոդ',
+        promoCodePlaceholder: 'PROMOCODE',
+        promoCodeValid: 'Զեղչը կիրառված է',
+        promoCodeInvalid: 'Անվավեր կոդ',
         submit: 'Ուղարկել Հայտ',
         submitting: 'Ուղարկվում է...',
         success: 'Շնորհակալություն: Մենք կկապվենք ձեզ հետ 24 ժամվա ընթացքում:',
@@ -271,6 +282,10 @@ export const translations = {
           ]
         }
       ],
+      promoCode: 'Պրոմո Կոդ',
+      promoCodePlaceholder: 'Օր.՝ BSCOSMO',
+      promoCodeValid: 'Զեղչը կիրառված է',
+      promoCodeInvalid: 'Անվավեր կոդ',
       next: 'Հաջորդը',
       prev: 'Հետ',
       submit: 'Ուղարկել Հայտը',
@@ -299,6 +314,13 @@ export const translations = {
     lang: 'ru',
     langLabel: 'РУ',
     langFull: 'Русский',
+
+    validation: {
+      required: 'Обязательное поле',
+      invalidEmail: 'Неверный email адрес',
+      recaptcha: 'Пожалуйста, пройдите reCAPTCHA',
+      submitError: 'Ошибка отправки: Попробуйте снова',
+    },
 
     nav: {
       services: 'Услуги',
@@ -493,6 +515,10 @@ export const translations = {
         clinicPlaceholder: 'Название вашей клиники',
         message: 'Сообщение (необязательно)',
         messagePlaceholder: 'Опишите вашу основную проблему или вопрос...',
+        promoCode: 'Промо Код',
+        promoCodePlaceholder: 'PROMOCODE',
+        promoCodeValid: 'Скидка применена',
+        promoCodeInvalid: 'Неверный код',
         submit: 'Отправить Заявку',
         submitting: 'Отправляется...',
         success: 'Спасибо! Мы свяжемся с вами в течение 24 часов.',
@@ -567,6 +593,10 @@ export const translations = {
           ]
         }
       ],
+      promoCode: 'Промо Код',
+      promoCodePlaceholder: 'Напр. BSCOSMO',
+      promoCodeValid: 'Скидка применена',
+      promoCodeInvalid: 'Неверный код',
       next: 'Далее',
       prev: 'Назад',
       submit: 'Отправить Заявку',
