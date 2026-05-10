@@ -225,7 +225,7 @@ export default function ContactModal({ isOpen, onClose, t }) {
               <div ref={contentRef} className="flex-1 space-y-4 overflow-y-auto pr-1 scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
                   <div className="grid grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-2">
                     {currentStep.questions.map((q) => (
-                      <div key={q.id} className={`group space-y-1.5 ${q.type === 'textarea' ? 'sm:col-span-2' : ''}`}>
+                      <div key={q.id} className={`group space-y-1.5 ${(q.type === 'textarea' || q.id === 'currentTools' || q.id === 'mainProblem') ? 'sm:col-span-2' : ''}`}>
                         <label className="block text-[13px] font-bold text-slate-700 transition-colors group-focus-within:text-blue-600">
                           {q.label} <span className="text-red-500">*</span>
                         </label>
