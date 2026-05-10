@@ -1,5 +1,5 @@
 import { useRef, useState, useEffect } from 'react'
-import { X, ChevronRight, ChevronLeft, CheckCircle2 } from 'lucide-react'
+import { X, ChevronRight, ChevronLeft, CheckCircle2, User, Mail, Phone, Building2, Stethoscope, Users, MessageSquare, Settings, Ticket } from 'lucide-react'
 import { detectTrafficSource } from '../utils/trafficSource'
 import RecaptchaWidget from './RecaptchaWidget'
 
@@ -13,12 +13,18 @@ export default function ContactModal({ isOpen, onClose, t }) {
   const [isSubmitted, setIsSubmitted] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [recaptchaToken, setRecaptchaToken] = useState('')
+  const contentRef = useRef(null)
   const recaptchaRef = useRef(null)
+  const recaptchaSectionRef = useRef(null)
 
   useEffect(() => {
     fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/promo-codes`)
-      .then(r => r.json())
-      .then(codes => setValidCodes(codes))
+      .then(r => r.ok ? r.json() : [])
+      .then(codes => {
+        if (Array.isArray(codes)) {
+          setValidCodes(codes)
+        }
+      })
       .catch(() => {})
   }, [])
 
@@ -35,12 +41,42 @@ export default function ContactModal({ isOpen, onClose, t }) {
     }
   }, [isOpen])
 
+  const isLastStep = step === t.modal.steps.length - 1
+  const matchedPromo = Array.isArray(validCodes) 
+    ? validCodes.find(c => c.code === promoCode.trim().toUpperCase())
+    : null
+  const isValidPromo = promoCode.trim() !== '' && !!matchedPromo
+
+  useEffect(() => {
+    if (!isOpen || !isLastStep) {
+      return
+    }
+
+    const frame = window.requestAnimationFrame(() => {
+      contentRef.current?.scrollTo({
+        top: contentRef.current.scrollHeight,
+        behavior: 'smooth'
+      })
+    })
+
+    return () => window.cancelAnimationFrame(frame)
+  }, [isOpen, isLastStep])
+
+  useEffect(() => {
+    if (!errors.recaptcha) {
+      return
+    }
+
+    recaptchaSectionRef.current?.scrollIntoView({
+      block: 'nearest',
+      behavior: 'smooth'
+    })
+  }, [errors.recaptcha])
+
   if (!isOpen) return null
 
   const currentStep = t.modal.steps[step]
-  const isLastStep = step === t.modal.steps.length - 1
-  const matchedPromo = validCodes.find(c => c.code === promoCode.trim().toUpperCase())
-  const isValidPromo = promoCode.trim() !== '' && !!matchedPromo
+  if (!currentStep) return null
 
   const validateStep = () => {
     const v = t.validation
@@ -117,11 +153,26 @@ export default function ContactModal({ isOpen, onClose, t }) {
   }
 
   const inputClass = (hasError) =>
-    `w-full rounded-2xl p-4 text-slate-900 placeholder:text-slate-400 transition-all outline-none ${
+    `w-full rounded-2xl py-3.5 px-4 pl-12 text-slate-900 placeholder:text-slate-400 transition-all outline-none border ${
       hasError
-        ? 'bg-red-50 ring-2 ring-red-400/40 border border-red-300'
-        : 'bg-slate-50 border border-slate-100 focus:bg-white focus:ring-2 focus:ring-blue-600/10 focus:border-blue-600'
+        ? 'bg-red-50 border-red-200 ring-4 ring-red-500/10 focus:border-red-400'
+        : 'bg-slate-50 border-slate-100 focus:bg-white focus:ring-4 focus:ring-blue-600/10 focus:border-blue-600'
     }`
+
+  const getIcon = (id) => {
+    switch (id) {
+      case 'name': return <User size={18} />
+      case 'email': return <Mail size={18} />
+      case 'phone': return <Phone size={18} />
+      case 'clinicName': return <Building2 size={18} />
+      case 'specialization': return <Stethoscope size={18} />
+      case 'teamSize': return <Users size={18} />
+      case 'mainProblem': return <MessageSquare size={18} />
+      case 'currentTools': return <Settings size={18} />
+      case 'promoCode': return <Ticket size={18} />
+      default: return null
+    }
+  }
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-6">
@@ -130,7 +181,7 @@ export default function ContactModal({ isOpen, onClose, t }) {
         onClick={onClose}
       />
 
-      <div className="relative w-full max-w-xl max-h-[calc(100vh-1.5rem)] overflow-hidden rounded-[2rem] bg-white shadow-2xl animate-in zoom-in-95 duration-300 sm:max-h-[calc(100vh-3rem)] sm:rounded-[2.5rem]">
+      <div className="relative w-full max-w-2xl max-h-[calc(100vh-1rem)] overflow-hidden rounded-[2rem] bg-white shadow-2xl animate-in zoom-in-95 duration-300 sm:rounded-[2.5rem]">
         <button
           onClick={onClose}
           className="absolute right-4 top-4 z-10 p-2 text-slate-400 transition-colors hover:text-slate-900 sm:right-6 sm:top-6"
@@ -152,8 +203,8 @@ export default function ContactModal({ isOpen, onClose, t }) {
             </button>
           </div>
         ) : (
-          <div className="flex max-h-[calc(100vh-1.5rem)] flex-col sm:max-h-[calc(100vh-3rem)]">
-            <div className="p-6 pb-5 sm:p-8 sm:pb-6 md:p-12 md:pb-6">
+          <div className="flex flex-col">
+            <div className="p-6 pb-4 sm:px-10 sm:pt-10 sm:pb-4 md:px-12">
               <h2 className="mb-2 pr-10 text-2xl font-black text-slate-900 md:text-3xl">
                 {t.modal.title}
               </h2>
@@ -170,87 +221,102 @@ export default function ContactModal({ isOpen, onClose, t }) {
               </div>
             </div>
 
-            <form onSubmit={handleNext} noValidate className="flex min-h-0 flex-1 flex-col px-6 pb-6 sm:px-8 sm:pb-8 md:px-12 md:pb-12">
-              <div className="flex-1 space-y-6 overflow-y-auto pr-1">
-                <div className="space-y-4">
-                  <h3 className="text-xs font-black uppercase tracking-widest text-blue-600 mb-6">
-                    {step + 1}. {currentStep.title}
-                  </h3>
+            <form onSubmit={handleNext} noValidate className="flex min-h-0 flex-1 flex-col px-6 pb-6 sm:px-10 sm:pb-8 md:px-12 md:pb-10">
+              <div ref={contentRef} className="flex-1 space-y-4 overflow-y-auto pr-1 scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+                  <div className="grid grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-2">
+                    {currentStep.questions.map((q) => (
+                      <div key={q.id} className={`group space-y-1.5 ${q.type === 'textarea' ? 'sm:col-span-2' : ''}`}>
+                        <label className="block text-[13px] font-bold text-slate-700 transition-colors group-focus-within:text-blue-600">
+                          {q.label} <span className="text-red-500">*</span>
+                        </label>
+                        <div className="relative">
+                          <div className={`absolute left-4 top-1/2 -translate-y-1/2 transition-colors ${errors[q.id] ? 'text-red-400' : 'text-slate-400 group-focus-within:text-blue-600'}`}>
+                            {getIcon(q.id)}
+                          </div>
+                          {q.type === 'textarea' ? (
+                            <textarea
+                              placeholder={q.placeholder}
+                              value={formData[q.id] || ''}
+                              onChange={(e) => handleChange(q.id, e.target.value)}
+                              className={`${inputClass(errors[q.id])} min-h-[80px] resize-none !top-0 !translate-y-0 pt-3.5`}
+                            />
+                          ) : (
+                            <input
+                              type={q.type}
+                              placeholder={q.placeholder}
+                              value={formData[q.id] || ''}
+                              onChange={(e) => handleChange(q.id, e.target.value)}
+                              className={inputClass(errors[q.id])}
+                            />
+                          )}
+                        </div>
+                        {errors[q.id] && (
+                          <p className="text-[11px] font-bold text-red-500 flex items-center gap-1.5 px-1">
+                            <span className="w-1 h-1 bg-red-500 rounded-full" />
+                            {errors[q.id]}
+                          </p>
+                        )}
+                      </div>
+                    ))}
 
-                  {currentStep.questions.map((q) => (
-                    <div key={q.id}>
-                      <label className="text-sm font-bold text-slate-700 ml-1 mb-2 block">
-                        {q.label}
-                      </label>
-                      {q.type === 'textarea' ? (
-                        <textarea
-                          placeholder={q.placeholder}
-                          value={formData[q.id] || ''}
-                          onChange={(e) => handleChange(q.id, e.target.value)}
-                          className={`${inputClass(errors[q.id])} min-h-[100px] resize-none`}
-                        />
-                      ) : (
-                        <input
-                          type={q.type}
-                          placeholder={q.placeholder}
-                          value={formData[q.id] || ''}
-                          onChange={(e) => handleChange(q.id, e.target.value)}
-                          className={inputClass(errors[q.id])}
-                        />
-                      )}
-                      {errors[q.id] && (
-                        <p className="text-xs mt-1.5 ml-1 font-bold text-red-500">{errors[q.id]}</p>
-                      )}
-                    </div>
-                  ))}
-
-                  {isLastStep && (
-                    <>
-                      {/* Promo code */}
-                      <div>
-                        <label className="text-sm font-bold text-slate-700 ml-1 mb-2 block">
+                    {isLastStep && (
+                      <div className="group space-y-1.5">
+                        <label className="block text-[13px] font-bold text-slate-700 transition-colors group-focus-within:text-blue-600">
                           {t.modal.promoCode}
                         </label>
                         <div className="relative">
+                          <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-600 transition-colors">
+                            {getIcon('promoCode')}
+                          </div>
                           <input
                             type="text"
                             placeholder={t.modal.promoCodePlaceholder}
                             value={promoCode}
                             onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
-                            className={`${inputClass(false)} uppercase tracking-widest pr-10`}
+                            className={`${inputClass(false)} uppercase tracking-widest pr-12`}
                           />
                           {promoCode.trim() !== '' && (
-                            <span className={`absolute right-4 top-1/2 -translate-y-1/2 text-sm font-black ${isValidPromo ? 'text-green-500' : 'text-red-400'}`}>
-                              {isValidPromo ? '✓' : '✗'}
-                            </span>
+                            <div className={`absolute right-4 top-1/2 -translate-y-1/2 transition-all duration-300 ${isValidPromo ? 'scale-110' : 'scale-100'}`}>
+                              {isValidPromo ? (
+                                <div className="flex h-5 w-5 items-center justify-center rounded-full bg-green-500 text-white shadow-sm">
+                                  <CheckCircle2 size={12} strokeWidth={3} />
+                                </div>
+                              ) : (
+                                <div className="flex h-5 w-5 items-center justify-center rounded-full bg-red-100 text-red-500">
+                                  <X size={12} strokeWidth={3} />
+                                </div>
+                              )}
+                            </div>
                           )}
                         </div>
                         {promoCode.trim() !== '' && (
-                          <p className={`text-xs ml-1 mt-1.5 font-bold ${isValidPromo ? 'text-green-500' : 'text-red-400'}`}>
+                          <p className={`text-[11px] font-bold px-1 flex items-center gap-1.5 ${isValidPromo ? 'text-green-600' : 'text-red-500'}`}>
+                            <span className={`w-1 h-1 rounded-full ${isValidPromo ? 'bg-green-600' : 'bg-red-500'}`} />
                             {isValidPromo
                               ? matchedPromo.discount ? `${matchedPromo.discount}% ${t.modal.promoCodeValid}` : t.modal.promoCodeValid
                               : t.modal.promoCodeInvalid}
                           </p>
                         )}
                       </div>
-
-                      {/* reCAPTCHA */}
-                      <div>
-                        <RecaptchaWidget
-                          ref={recaptchaRef}
-                          onTokenChange={(token) => {
-                            setRecaptchaToken(token)
-                            if (token && errors.recaptcha) setErrors(prev => ({ ...prev, recaptcha: '' }))
-                          }}
-                          className="pt-2"
-                        />
-                      </div>
-                    </>
-                  )}
-                </div>
+                    )}
+                  </div>
               </div>
 
-              <div className="mt-6 flex flex-col gap-2 border-t border-slate-100 pt-5 sm:mt-8 sm:pt-6 md:mt-12">
+              <div className="mt-2 flex flex-col gap-2 border-t border-slate-100 pt-3 sm:pt-4">
+                {isLastStep && (
+                  <div
+                    ref={recaptchaSectionRef}
+                    className="flex justify-center py-2"
+                  >
+                    <RecaptchaWidget
+                      ref={recaptchaRef}
+                      onTokenChange={(token) => {
+                        setRecaptchaToken(token)
+                        if (token && errors.recaptcha) setErrors(prev => ({ ...prev, recaptcha: '' }))
+                      }}
+                    />
+                  </div>
+                )}
                 {/* reCAPTCHA / submit errors pinned above buttons */}
                 {(errors.recaptcha || submitError) && (
                   <p className="text-xs font-bold text-red-500 bg-red-50 border border-red-200 rounded-2xl px-4 py-3">

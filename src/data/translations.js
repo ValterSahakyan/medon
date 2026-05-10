@@ -283,7 +283,7 @@ export const translations = {
         }
       ],
       promoCode: 'Պրոմո Կոդ',
-      promoCodePlaceholder: 'Օր.՝ BSCOSMO',
+      promoCodePlaceholder: 'PROMOCODE',
       promoCodeValid: 'Զեղչը կիրառված է',
       promoCodeInvalid: 'Անվավեր կոդ',
       next: 'Հաջորդը',
@@ -594,7 +594,7 @@ export const translations = {
         }
       ],
       promoCode: 'Промо Код',
-      promoCodePlaceholder: 'Напр. BSCOSMO',
+      promoCodePlaceholder: 'PROMOCODE',
       promoCodeValid: 'Скидка применена',
       promoCodeInvalid: 'Неверный код',
       next: 'Далее',

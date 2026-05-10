@@ -98,4 +98,12 @@
   .btn-secondary {
     @apply btn-premium bg-white text-slate-900 border border-slate-200 hover:bg-slate-50 hover:border-slate-300;
   }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
 }

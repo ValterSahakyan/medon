@@ -1,4 +1,5 @@
 import { useRef, useState, useEffect } from 'react'
+import { User, Mail, Phone, Ticket, CheckCircle2, X } from 'lucide-react'
 import { detectTrafficSource } from '../utils/trafficSource'
 import RecaptchaWidget from './RecaptchaWidget'
 
@@ -13,12 +14,18 @@ export default function Contact({ t }) {
 
   useEffect(() => {
     fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/promo-codes`)
-      .then(r => r.json())
-      .then(codes => setValidCodes(codes))
+      .then(r => r.ok ? r.json() : [])
+      .then(codes => {
+        if (Array.isArray(codes)) {
+          setValidCodes(codes)
+        }
+      })
       .catch(() => {})
   }, [])
 
-  const matchedPromo = validCodes.find(c => c.code === formData.promoCode.trim().toUpperCase())
+  const matchedPromo = Array.isArray(validCodes)
+    ? validCodes.find(c => c.code === formData.promoCode.trim().toUpperCase())
+    : null
   const isValidPromo = formData.promoCode.trim() !== '' && !!matchedPromo
 
   const validate = () => {
@@ -75,10 +82,10 @@ export default function Contact({ t }) {
   }
 
   const inputClass = (hasError) =>
-    `w-full rounded-xl px-4 py-3 placeholder:text-white/40 text-white transition-all outline-none ${
+    `w-full rounded-xl px-4 py-3.5 pl-12 placeholder:text-white/30 text-white transition-all outline-none border ${
       hasError
-        ? 'bg-red-500/20 ring-1 ring-red-400/70'
-        : 'bg-white/10 focus:bg-white/20 focus:ring-1 focus:ring-white/40'
+        ? 'bg-red-500/10 border-red-400/50 ring-4 ring-red-400/10 focus:border-red-400'
+        : 'bg-white/5 border-white/10 focus:bg-white/10 focus:ring-4 focus:ring-white/5 focus:border-white/30'
     }`
 
   return (
@@ -111,77 +118,105 @@ export default function Contact({ t }) {
             ) : (
               <form onSubmit={handleSubmit} noValidate className="space-y-4">
                 {/* Name */}
-                <div>
-                  <label className="text-xs font-bold uppercase tracking-widest opacity-70 mb-2 block">
-                    {t.contact.form.name}
+                <div className="group space-y-2">
+                  <label className="text-xs font-bold uppercase tracking-widest text-blue-100/70 group-focus-within:text-white transition-colors">
+                    {t.contact.form.name} <span className="text-red-400">*</span>
                   </label>
-                  <input
-                    type="text"
-                    value={formData.name}
-                    onChange={(e) => handleChange('name', e.target.value)}
-                    placeholder={t.contact.form.namePlaceholder}
-                    className={inputClass(errors.name)}
-                  />
+                  <div className="relative">
+                    <User size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-white/30 group-focus-within:text-white/70 transition-colors" />
+                    <input
+                      type="text"
+                      value={formData.name}
+                      onChange={(e) => handleChange('name', e.target.value)}
+                      placeholder={t.contact.form.namePlaceholder}
+                      className={inputClass(errors.name)}
+                    />
+                  </div>
                   {errors.name && (
-                    <p className="text-xs mt-1.5 font-bold text-red-300">{errors.name}</p>
+                    <p className="text-xs font-bold text-red-300 flex items-center gap-1.5 px-1">
+                      <span className="w-1 h-1 bg-red-400 rounded-full" />
+                      {errors.name}
+                    </p>
                   )}
                 </div>
 
                 {/* Email */}
-                <div>
-                  <label className="text-xs font-bold uppercase tracking-widest opacity-70 mb-2 block">
-                    {t.contact.form.email}
+                <div className="group space-y-2">
+                  <label className="text-xs font-bold uppercase tracking-widest text-blue-100/70 group-focus-within:text-white transition-colors">
+                    {t.contact.form.email} <span className="text-red-400">*</span>
                   </label>
-                  <input
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) => handleChange('email', e.target.value)}
-                    placeholder={t.contact.form.emailPlaceholder}
-                    className={inputClass(errors.email)}
-                  />
+                  <div className="relative">
+                    <Mail size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-white/30 group-focus-within:text-white/70 transition-colors" />
+                    <input
+                      type="email"
+                      value={formData.email}
+                      onChange={(e) => handleChange('email', e.target.value)}
+                      placeholder={t.contact.form.emailPlaceholder}
+                      className={inputClass(errors.email)}
+                    />
+                  </div>
                   {errors.email && (
-                    <p className="text-xs mt-1.5 font-bold text-red-300">{errors.email}</p>
+                    <p className="text-xs font-bold text-red-300 flex items-center gap-1.5 px-1">
+                      <span className="w-1 h-1 bg-red-400 rounded-full" />
+                      {errors.email}
+                    </p>
                   )}
                 </div>
 
                 {/* Phone */}
-                <div>
-                  <label className="text-xs font-bold uppercase tracking-widest opacity-70 mb-2 block">
-                    {t.contact.form.phone}
+                <div className="group space-y-2">
+                  <label className="text-xs font-bold uppercase tracking-widest text-blue-100/70 group-focus-within:text-white transition-colors">
+                    {t.contact.form.phone} <span className="text-red-400">*</span>
                   </label>
-                  <input
-                    type="tel"
-                    value={formData.phone}
-                    onChange={(e) => handleChange('phone', e.target.value)}
-                    placeholder={t.contact.form.phonePlaceholder}
-                    className={inputClass(errors.phone)}
-                  />
+                  <div className="relative">
+                    <Phone size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-white/30 group-focus-within:text-white/70 transition-colors" />
+                    <input
+                      type="tel"
+                      value={formData.phone}
+                      onChange={(e) => handleChange('phone', e.target.value)}
+                      placeholder={t.contact.form.phonePlaceholder}
+                      className={inputClass(errors.phone)}
+                    />
+                  </div>
                   {errors.phone && (
-                    <p className="text-xs mt-1.5 font-bold text-red-300">{errors.phone}</p>
+                    <p className="text-xs font-bold text-red-300 flex items-center gap-1.5 px-1">
+                      <span className="w-1 h-1 bg-red-400 rounded-full" />
+                      {errors.phone}
+                    </p>
                   )}
                 </div>
 
                 {/* Promo code */}
-                <div>
-                  <label className="text-xs font-bold uppercase tracking-widest opacity-70 mb-2 block">
+                <div className="group space-y-2">
+                  <label className="text-xs font-bold uppercase tracking-widest text-blue-100/70 group-focus-within:text-white transition-colors">
                     {t.contact.form.promoCode}
                   </label>
                   <div className="relative">
+                    <Ticket size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-white/30 group-focus-within:text-white/70 transition-colors" />
                     <input
                       type="text"
                       value={formData.promoCode}
                       onChange={(e) => handleChange('promoCode', e.target.value.toUpperCase())}
                       placeholder={t.contact.form.promoCodePlaceholder}
-                      className={`${inputClass(false)} uppercase tracking-widest pr-10`}
+                      className={`${inputClass(false)} uppercase tracking-widest pr-12`}
                     />
                     {formData.promoCode.trim() !== '' && (
-                      <span className={`absolute right-3 top-1/2 -translate-y-1/2 text-sm font-black ${isValidPromo ? 'text-green-300' : 'text-red-300'}`}>
-                        {isValidPromo ? '✓' : '✗'}
-                      </span>
+                      <div className={`absolute right-4 top-1/2 -translate-y-1/2 transition-all duration-300 ${isValidPromo ? 'scale-110' : 'scale-100'}`}>
+                        {isValidPromo ? (
+                          <div className="flex h-6 w-6 items-center justify-center rounded-full bg-cyan-400 text-blue-900 shadow-sm">
+                            <CheckCircle2 size={14} strokeWidth={3} />
+                          </div>
+                        ) : (
+                          <div className="flex h-6 w-6 items-center justify-center rounded-full bg-red-400/20 text-red-300">
+                            <X size={14} strokeWidth={3} />
+                          </div>
+                        )}
+                      </div>
                     )}
                   </div>
                   {formData.promoCode.trim() !== '' && (
-                    <p className={`text-xs mt-1.5 font-bold ${isValidPromo ? 'text-green-300' : 'text-red-300/80'}`}>
+                    <p className={`text-xs font-bold flex items-center gap-1.5 px-1 ${isValidPromo ? 'text-cyan-200' : 'text-red-300/80'}`}>
+                      <span className={`w-1 h-1 rounded-full ${isValidPromo ? 'bg-cyan-200' : 'bg-red-300'}`} />
                       {isValidPromo
                         ? matchedPromo.discount ? `${matchedPromo.discount}% ${t.contact.form.promoCodeValid}` : t.contact.form.promoCodeValid
                         : t.contact.form.promoCodeInvalid}
@@ -190,7 +225,7 @@ export default function Contact({ t }) {
                 </div>
 
                 {/* reCAPTCHA */}
-                <div>
+                <div className="flex justify-center py-2">
                   <RecaptchaWidget
                     ref={recaptchaRef}
                     onTokenChange={(token) => {
@@ -198,9 +233,6 @@ export default function Contact({ t }) {
                       if (token && errors.recaptcha) setErrors(prev => ({ ...prev, recaptcha: '' }))
                     }}
                   />
-                  {errors.recaptcha && (
-                    <p className="text-xs mt-1.5 font-bold text-red-300">{errors.recaptcha}</p>
-                  )}
                 </div>
 
                 {/* Submit error */}

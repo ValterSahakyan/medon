@@ -2,6 +2,8 @@ import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 're
 
 const SITE_KEY = import.meta.env.VITE_RECAPTCHA_SITE_KEY || ''
 const SCRIPT_ID = 'google-recaptcha-api'
+const WIDGET_WIDTH = 304
+const WIDGET_HEIGHT = 78
 
 function loadRecaptchaScript() {
   if (typeof window === 'undefined') {
@@ -42,9 +44,11 @@ const RecaptchaWidget = forwardRef(function RecaptchaWidget(
   { theme = 'light', onTokenChange, className = '' },
   ref
 ) {
+  const rootRef = useRef(null)
   const containerRef = useRef(null)
   const widgetIdRef = useRef(null)
   const [loadError, setLoadError] = useState('')
+  const [scale, setScale] = useState(1)
 
   useImperativeHandle(ref, () => ({
     reset() {
@@ -54,6 +58,28 @@ const RecaptchaWidget = forwardRef(function RecaptchaWidget(
       onTokenChange('')
     }
   }), [onTokenChange])
+
+  useEffect(() => {
+    if (!rootRef.current || typeof window === 'undefined') {
+      return undefined
+    }
+
+    const updateScale = () => {
+      const availableWidth = rootRef.current?.clientWidth || WIDGET_WIDTH
+      setScale(Math.min(1, availableWidth / WIDGET_WIDTH))
+    }
+
+    updateScale()
+
+    const observer = new ResizeObserver(updateScale)
+    observer.observe(rootRef.current)
+    window.addEventListener('resize', updateScale)
+
+    return () => {
+      observer.disconnect()
+      window.removeEventListener('resize', updateScale)
+    }
+  }, [])
 
   useEffect(() => {
     let cancelled = false
@@ -93,7 +119,21 @@ const RecaptchaWidget = forwardRef(function RecaptchaWidget(
 
   return (
     <div className={className}>
-      <div ref={containerRef} />
+      <div
+        ref={rootRef}
+        className="w-full overflow-hidden"
+        style={{ minHeight: `${WIDGET_HEIGHT * scale}px` }}
+      >
+        <div
+          style={{
+            width: `${WIDGET_WIDTH}px`,
+            transform: `scale(${scale})`,
+            transformOrigin: 'top left'
+          }}
+        >
+          <div ref={containerRef} />
+        </div>
+      </div>
       {loadError ? (
         <p className="mt-2 text-sm font-medium text-red-500">{loadError}</p>
       ) : null}
